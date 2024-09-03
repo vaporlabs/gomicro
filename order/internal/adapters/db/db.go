@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/vaporlabs/gomicro/order/internal/application/core/domain"
@@ -39,10 +40,10 @@ func NewAdapter(dataSourceUrl string) (*Adapter, error) {
 	return &Adapter{db: db}, nil
 }
 
-func (a Adapter) Get(id string) (domain.Order, error) {
+func (a Adapter) Get(ctx context.Context, id int64) (domain.Order, error) {
 	// Fetch order entity from DB
 	var orderEntity Order
-	res := a.db.First(&orderEntity, id)
+	res := a.db.WithContext(ctx).Preload("OrderItems").First(&orderEntity, id)
 	// Convert entity into domain model
 	var orderItems []domain.OrderItem
 	for _, orderItem := range orderEntity.OrderItems {
@@ -79,7 +80,7 @@ func (a Adapter) Save(order *domain.Order) error {
 	}
 	res := a.db.Create(&orderModel)
 	if res.Error != nil {
-		order.ID = int64(order.ID)
+		order.ID = int64(orderModel.ID)
 	}
 	return res.Error
 }
